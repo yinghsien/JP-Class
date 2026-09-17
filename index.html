@@ -72,16 +72,6 @@
       background-color: #f1f1f1;
     }
 
-    .btn-action {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-    }
-
-    .btn-action:hover {
-      background-color: #c0392b;
-    }
-
     /* 進度資訊 */
     .info-bar {
       display: flex;
@@ -139,9 +129,10 @@
     }
 
     .card-front .word {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: bold;
       margin-bottom: 10px;
+      word-break: break-word;
     }
 
     .card-front .hint {
@@ -195,6 +186,7 @@
       border: none;
       border-radius: 8px;
       color: white;
+      cursor: pointer;
     }
 
     .btn-forget {
@@ -218,6 +210,7 @@
       align-items: center;
       justify-content: center;
       font-size: 1.1rem;
+      cursor: pointer;
     }
 
     .audio-btn:hover {
@@ -277,20 +270,7 @@
   </div>
 
   <script>
-    // 範例資料庫（實際開發時可替換為 fetch(Google_Apps_Script_URL) 抓取的 JSON 資料）
-    const mockDatabase = [
-      // 第 1 課
-      { id: 1, lesson: 1, word: "わたし", kana: "わたし", meaning: "我", example: "わたしはマイク・ミラーです。" },
-      { id: 2, lesson: 1, word: "会社員", kana: "かいしゃいん", meaning: "公司職員", example: "ミラーさんは会社員です。" },
-      { id: 3, lesson: 1, word: "銀行員", kana: "ぎんこういん", meaning: "銀行員", example: "わたしは銀行員じゃありません。" },
-      
-      // 第 2 課
-      { id: 4, lesson: 2, word: "本", kana: "ほん", meaning: "書、書籍", example: "これは本です。" },
-      { id: 5, lesson: 2, word: "自動車", kana: "じどうしゃ", meaning: "汽車", example: "それは自動車の能力です。" },
-
-      // 第 13 課 (初級二)
-      { id: 6, lesson: 13, word: "遊びます", kana: "あそびます", meaning: "玩耍", example: "週末に公園で遊びます。" }
-    ];
+    const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
 
     let currentVocabList = [];
     let currentIndex = 0;
@@ -315,38 +295,46 @@
       loadVocab();
     }
 
-    // 載入當前選擇課數的單字
+    // 從 Google Apps Script 載入當前選擇課數的單字
     async function loadVocab() {
       const selectedLesson = document.getElementById("lessonSelect").value;
-      const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
-    
       document.getElementById("frontWord").textContent = "載入中...";
-    
+
       try {
         const response = await fetch(`${API_URL}?lesson=${selectedLesson}`);
+        if (!response.ok) {
+          throw new Error(`HTTP 錯誤狀態: ${response.status}`);
+        }
+
         const data = await response.json();
-        
-        // 強制比對數字與字串型態，避免 lesson: 1 與 "1" 比對失敗
-        currentVocabList = data.filter(item => String(item.lesson) === String(selectedLesson));
-        
-        currentIndex = 0;
-        renderCard();
+        console.log("API 回傳資料：", data);
+
+        if (Array.isArray(data) && data.length > 0) {
+          currentVocabList = data.filter(item => item && String(item.lesson) === String(selectedLesson));
+        } else {
+          currentVocabList = [];
+        }
+
+        if (currentVocabList.length === 0) {
+          document.getElementById("frontWord").textContent = `第 ${selectedLesson} 課暫無單字`;
+          document.getElementById("backKana").textContent = "";
+          document.getElementById("backMeaning").textContent = "";
+          document.getElementById("backExample").textContent = "";
+        } else {
+          currentIndex = 0;
+          renderCard();
+        }
+
         updateProgress();
       } catch (error) {
-        console.error("抓取單字失敗：", error);
-        document.getElementById("frontWord").textContent = "載入失敗，請檢查網路或 API";
+        console.error("抓取單字失敗原因：", error);
+        document.getElementById("frontWord").textContent = "載入失敗，請查看 F12 Console";
       }
     }
 
     // 渲染卡片內容
     function renderCard() {
-      if (currentVocabList.length === 0) {
-        document.getElementById("frontWord").textContent = "本課暫無單字";
-        document.getElementById("backKana").textContent = "";
-        document.getElementById("backMeaning").textContent = "";
-        document.getElementById("backExample").textContent = "";
-        return;
-      }
+      if (currentVocabList.length === 0) return;
 
       const current = currentVocabList[currentIndex];
       
@@ -357,9 +345,9 @@
 
       // 延遲更新文字以配合翻牌動畫
       setTimeout(() => {
-        document.getElementById("frontWord").textContent = current.word;
-        document.getElementById("backKana").textContent = current.kana;
-        document.getElementById("backMeaning").textContent = current.meaning;
+        document.getElementById("frontWord").textContent = current.word || "";
+        document.getElementById("backKana").textContent = current.kana || "";
+        document.getElementById("backMeaning").textContent = current.meaning || "";
         document.getElementById("backExample").textContent = current.example ? `例：${current.example}` : "";
       }, 150);
 
@@ -368,6 +356,7 @@
 
     // 3D 翻牌切換
     function flipCard() {
+      if (currentVocabList.length === 0) return;
       const card = document.getElementById("flashcard");
       card.classList.toggle("flipped");
       isFlipped = !isFlipped;
@@ -375,12 +364,13 @@
 
     // 隨機洗牌
     function shuffleVocab() {
+      if (currentVocabList.length <= 1) return;
       currentVocabList.sort(() => Math.random() - 0.5);
       currentIndex = 0;
       renderCard();
     }
 
-    // 日文語音發音 (Web Speech API)
+    // 日文語音發音
     function speakCurrentWord(event) {
       if (event) event.stopPropagation(); // 阻止觸發卡片翻牌
       if (currentVocabList.length === 0) return;
@@ -388,9 +378,11 @@
       const current = currentVocabList[currentIndex];
       const textToSpeak = current.kana || current.word;
 
+      if (!textToSpeak) return;
+
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = "ja-JP"; // 設定語言為日文
-      utterance.rate = 0.9;     // 稍微放慢速度適合學習者
+      utterance.lang = "ja-JP";
+      utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     }
 
@@ -399,11 +391,10 @@
       if (currentVocabList.length === 0) return;
 
       const current = currentVocabList[currentIndex];
-      
-      // 記錄到 localStorage
-      localStorage.setItem(`vocab_status_${current.id}`, remembered ? "remembered" : "forgot");
+      if (current && current.id) {
+        localStorage.setItem(`vocab_status_${current.id}`, remembered ? "remembered" : "forgot");
+      }
 
-      // 移動到下一個單字
       if (currentIndex < currentVocabList.length - 1) {
         currentIndex++;
       } else {
@@ -420,10 +411,9 @@
       const currentNum = total > 0 ? currentIndex + 1 : 0;
       document.getElementById("progressText").textContent = `單字：${currentNum} / ${total}`;
 
-      // 計算已記住數量
       let rememberedCount = 0;
       currentVocabList.forEach(item => {
-        if (localStorage.getItem(`vocab_status_${item.id}`) === "remembered") {
+        if (item && item.id && localStorage.getItem(`vocab_status_${item.id}`) === "remembered") {
           rememberedCount++;
         }
       });
@@ -436,9 +426,9 @@
         e.preventDefault();
         flipCard();
       } else if (e.code === "ArrowLeft") {
-        markWord(false); // 左方向鍵：還沒記住
+        markWord(false);
       } else if (e.code === "ArrowRight") {
-        markWord(true);  // 右方向鍵：已經記住
+        markWord(true);
       }
     });
 
