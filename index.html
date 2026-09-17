@@ -318,18 +318,23 @@
     // 載入當前選擇課數的單字
     async function loadVocab() {
       const selectedLesson = document.getElementById("lessonSelect").value;
-      
-      // 替換成您剛剛複製的 Google Apps Script 網址
       const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
+    
+      document.getElementById("frontWord").textContent = "載入中...";
     
       try {
         const response = await fetch(`${API_URL}?lesson=${selectedLesson}`);
-        currentVocabList = await response.json();
+        const data = await response.json();
+        
+        // 強制比對數字與字串型態，避免 lesson: 1 與 "1" 比對失敗
+        currentVocabList = data.filter(item => String(item.lesson) === String(selectedLesson));
+        
         currentIndex = 0;
         renderCard();
         updateProgress();
       } catch (error) {
-        console.error("抓取資料失敗：", error);
+        console.error("抓取單字失敗：", error);
+        document.getElementById("frontWord").textContent = "載入失敗，請檢查網路或 API";
       }
     }
 
