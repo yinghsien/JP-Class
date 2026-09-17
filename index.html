@@ -357,7 +357,7 @@
     <span id="rememberCount">已記住：0</span>
   </div>
 
-  <!-- 3D 翻牌卡片 -->
+  <!-- 3D 卡片容器 -->
   <div class="card-container" onclick="flipCard()">
     <div class="card" id="flashcard">
       <!-- 正面 -->
@@ -397,8 +397,9 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
 
     let currentMode = "vocab"; // 'vocab' 或 'grammar'
-    let rawDataList = [];     
-    let currentDataList = []; 
+    let rawDataList = [];     // 原始無洗牌資料
+    let workingList = [];     // 當前基底資料 (可能洗過牌)
+    let currentDataList = []; // 經過 filter 篩選後的顯示資料
     let currentIndex = 0;
 
     // 切換單字卡與文法卡模式
@@ -431,7 +432,7 @@
       loadData();
     }
 
-    // 載入資料 (帶入 currentMode 參數)
+    // 載入資料
     async function loadData() {
       const selectedLesson = document.getElementById("lessonSelect").value;
       document.getElementById("frontTitle").textContent = "載入中...";
@@ -448,6 +449,8 @@
           rawDataList = [];
         }
 
+        // 重置為預設順序
+        workingList = [...rawDataList];
         currentIndex = 0;
         applyFilterAndRender();
       } catch (error) {
@@ -462,11 +465,26 @@
       applyFilterAndRender();
     }
 
+    // 洗牌功能 (修改：針對 workingList 打亂，並保持狀態)
+    function shuffleData() {
+      if (workingList.length <= 1) return;
+
+      // 使用 Durstenfeld / Fisher-Yates 演算法確保真正隨機打亂
+      for (let i = workingList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [workingList[i], workingList[j]] = [workingList[j], workingList[i]];
+      }
+
+      currentIndex = 0;
+      applyFilterAndRender();
+    }
+
     // 套用篩選並渲染
     function applyFilterAndRender() {
       const filterType = document.getElementById("filterSelect").value;
 
-      currentDataList = rawDataList.filter(item => {
+      // 從已經打亂/排好的 workingList 進行過濾，維持洗牌順序
+      currentDataList = workingList.filter(item => {
         const key = `${currentMode}_status_${item.id}`;
         const isRemembered = localStorage.getItem(key) === "remembered";
         if (filterType === "remembered") return isRemembered;
@@ -483,9 +501,8 @@
 
     // 渲染當前卡片
     function renderCard() {
-      // 每次渲染強制翻回正面
       const card = document.getElementById("flashcard");
-      card.classList.remove("flipped");
+      card.classList.remove("flipped"); // 每次換牌自動翻回正面
 
       if (currentDataList.length === 0) {
         document.getElementById("frontTitle").textContent = "無符合條件的內容";
@@ -503,13 +520,12 @@
 
       const current = currentDataList[currentIndex];
 
-      // 檢查並顯示視覺標記
+      // 檢查並顯示已記住標籤
       const key = `${currentMode}_status_${current.id}`;
       const isRemembered = localStorage.getItem(key) === "remembered";
       document.getElementById("statusBadge").style.display = isRemembered ? "block" : "none";
 
       if (currentMode === "vocab") {
-        // 單字卡渲染
         document.getElementById("frontTitle").textContent = current.word || "";
         document.getElementById("frontFormula").style.display = "none";
         document.getElementById("frontKana").textContent = current.kana || "";
@@ -528,7 +544,6 @@
           document.getElementById("backExampleJp").innerHTML = "";
         }
       } else {
-        // 文法句型卡渲染
         document.getElementById("frontTitle").textContent = current.title || "";
         
         if (current.formula) {
@@ -565,14 +580,6 @@
       card.classList.toggle("flipped");
     }
 
-    // 洗牌功能
-    function shuffleData() {
-      if (currentDataList.length <= 1) return;
-      currentDataList.sort(() => Math.random() - 0.5);
-      currentIndex = 0;
-      renderCard();
-    }
-
     // 語音發音
     function speakCurrentText(event) {
       if (event) event.stopPropagation();
@@ -591,7 +598,7 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    // 標記記憶狀態 (優化流暢度與重跑機制)
+    // 標記記憶狀態
     function markItem(remembered) {
       if (currentDataList.length === 0) return;
 
@@ -603,23 +610,20 @@
 
       const filterType = document.getElementById("filterSelect").value;
 
-      // 如果有開篩選，需要重新計算當前資料列表
+      // 如果有開「僅看...」過濾，標記後該項目會離開列表，需重新過濾
       if (filterType !== "all") {
-        currentDataList = rawDataList.filter(item => {
-          const key = `${currentMode}_status_${item.id}`;
-          const isRemembered = localStorage.getItem(key) === "remembered";
-          if (filterType === "remembered") return isRemembered;
-          if (filterType === "forgot") return !isRemembered;
-          return true;
-        });
-      }
-
-      // 跳下一張或重置
-      if (currentIndex < currentDataList.length - 1) {
-        currentIndex++;
+        applyFilterAndRender();
+        if (currentIndex >= currentDataList.length) {
+          currentIndex = 0;
+        }
       } else {
-        alert("目前的項目已瀏覽完畢！將重新從第一張開始。");
-        currentIndex = 0;
+        // 如果是「全部項目」，直接推進到下一張
+        if (currentIndex < currentDataList.length - 1) {
+          currentIndex++;
+        } else {
+          alert("目前的項目已瀏覽完畢！將重新從第一張開始。");
+          currentIndex = 0;
+        }
       }
 
       renderCard();
@@ -655,7 +659,6 @@
 
     // 鍵盤快捷鍵綁定
     document.addEventListener("keydown", (e) => {
-      // 避開正在操作下拉選單的情況
       if (e.target.tagName === "SELECT") return;
 
       if (e.code === "Space") {
