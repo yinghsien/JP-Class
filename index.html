@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大家的日本語 N5 單字卡</title>
+  <style>
+    :root {
+      --primary-color: #e74c3c;
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #2c3e50;
+      --accent-color: #27ae60;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    /* 選單控制區 */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      font-size: 0.95rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      outline: none;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #f1f1f1;
+    }
+
+    .btn-action {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+    }
+
+    .btn-action:hover {
+      background-color: #c0392b;
+    }
+
+    /* 進度資訊 */
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    /* 3D 卡片容器 */
+    .card-container {
+      width: 100%;
+      max-width: 400px;
+      height: 260px;
+      perspective: 1000px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+      border: 2px solid #f0f0f0;
+    }
+
+    /* 正面 */
+    .card-front {
+      color: var(--text-color);
+    }
+
+    .card-front .word {
+      font-size: 2.2rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .card-front .hint {
+      font-size: 0.8rem;
+      color: #999;
+      position: absolute;
+      bottom: 15px;
+    }
+
+    /* 背面 */
+    .card-back {
+      transform: rotateY(180deg);
+      background-color: #fafafa;
+    }
+
+    .card-back .kana {
+      font-size: 1.2rem;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+    }
+
+    .card-back .meaning {
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .card-back .example {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 10px;
+      background: #f0f4f8;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+
+    /* 按鈕操作區 */
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      max-width: 400px;
+      justify-content: center;
+    }
+
+    .btn-status {
+      flex: 1;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      color: white;
+    }
+
+    .btn-forget {
+      background-color: #e74c3c;
+    }
+
+    .btn-remember {
+      background-color: var(--accent-color);
+    }
+
+    .audio-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .audio-btn:hover {
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>大家的日本語 N5 單字卡</h1>
+  </header>
+
+  <!-- 選單區 -->
+  <div class="controls">
+    <select id="bookSelect" onchange="updateLessonOptions()">
+      <option value="1">初級一 (1-12課)</option>
+      <option value="2">初級二 (13-25課)</option>
+    </select>
+
+    <select id="lessonSelect" onchange="loadVocab()">
+      <!-- 課別選項會由 JS 自動生成 -->
+    </select>
+
+    <button onclick="shuffleVocab()">🔀 隨機洗牌</button>
+  </div>
+
+  <!-- 進度與計數器 -->
+  <div class="info-bar">
+    <span id="progressText">單字：0 / 0</span>
+    <span id="rememberCount">已記住：0</span>
+  </div>
+
+  <!-- 3D 翻牌單字卡 -->
+  <div class="card-container" onclick="flipCard()">
+    <div class="card" id="flashcard">
+      <!-- 正面 -->
+      <div class="card-face card-front">
+        <button class="audio-btn" onclick="speakCurrentWord(event)" title="聽發音">🔊</button>
+        <div class="word" id="frontWord">載入中...</div>
+        <div class="hint">點擊卡片或按 Space 翻面</div>
+      </div>
+      <!-- 背面 -->
+      <div class="card-face card-back">
+        <button class="audio-btn" onclick="speakCurrentWord(event)" title="聽發音">🔊</button>
+        <div class="kana" id="backKana"></div>
+        <div class="meaning" id="backMeaning"></div>
+        <div class="example" id="backExample"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作按鈕 -->
+  <div class="action-buttons">
+    <button class="btn-status btn-forget" onclick="markWord(false)">❌ 還沒記住 (←)</button>
+    <button class="btn-status btn-remember" onclick="markWord(true)">⭕ 已經記住 (→)</button>
+  </div>
+
+  <script>
+    // 範例資料庫（實際開發時可替換為 fetch(Google_Apps_Script_URL) 抓取的 JSON 資料）
+    const mockDatabase = [
+      // 第 1 課
+      { id: 1, lesson: 1, word: "わたし", kana: "わたし", meaning: "我", example: "わたしはマイク・ミラーです。" },
+      { id: 2, lesson: 1, word: "会社員", kana: "かいしゃいん", meaning: "公司職員", example: "ミラーさんは会社員です。" },
+      { id: 3, lesson: 1, word: "銀行員", kana: "ぎんこういん", meaning: "銀行員", example: "わたしは銀行員じゃありません。" },
+      
+      // 第 2 課
+      { id: 4, lesson: 2, word: "本", kana: "ほん", meaning: "書、書籍", example: "これは本です。" },
+      { id: 5, lesson: 2, word: "自動車", kana: "じどうしゃ", meaning: "汽車", example: "それは自動車の能力です。" },
+
+      // 第 13 課 (初級二)
+      { id: 6, lesson: 13, word: "遊びます", kana: "あそびます", meaning: "玩耍", example: "週末に公園で遊びます。" }
+    ];
+
+    let currentVocabList = [];
+    let currentIndex = 0;
+    let isFlipped = false;
+
+    // 初始化課別下拉選單
+    function updateLessonOptions() {
+      const book = document.getElementById("bookSelect").value;
+      const lessonSelect = document.getElementById("lessonSelect");
+      lessonSelect.innerHTML = "";
+
+      const start = book === "1" ? 1 : 13;
+      const end = book === "1" ? 12 : 25;
+
+      for (let i = start; i <= end; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `第 ${i} 課`;
+        lessonSelect.appendChild(option);
+      }
+
+      loadVocab();
+    }
+
+    // 載入當前選擇課數的單字
+    function loadVocab() {
+      const selectedLesson = parseInt(document.getElementById("lessonSelect").value);
+      
+      // 篩選單字（若串接 Google 試算表，可在這裡改為 fetch API）
+      currentVocabList = mockDatabase.filter(item => item.lesson === selectedLesson);
+      currentIndex = 0;
+      
+      renderCard();
+      updateProgress();
+    }
+
+    // 渲染卡片內容
+    function renderCard() {
+      if (currentVocabList.length === 0) {
+        document.getElementById("frontWord").textContent = "本課暫無單字";
+        document.getElementById("backKana").textContent = "";
+        document.getElementById("backMeaning").textContent = "";
+        document.getElementById("backExample").textContent = "";
+        return;
+      }
+
+      const current = currentVocabList[currentIndex];
+      
+      // 翻回正面
+      const card = document.getElementById("flashcard");
+      card.classList.remove("flipped");
+      isFlipped = false;
+
+      // 延遲更新文字以配合翻牌動畫
+      setTimeout(() => {
+        document.getElementById("frontWord").textContent = current.word;
+        document.getElementById("backKana").textContent = current.kana;
+        document.getElementById("backMeaning").textContent = current.meaning;
+        document.getElementById("backExample").textContent = current.example ? `例：${current.example}` : "";
+      }, 150);
+
+      updateProgress();
+    }
+
+    // 3D 翻牌切換
+    function flipCard() {
+      const card = document.getElementById("flashcard");
+      card.classList.toggle("flipped");
+      isFlipped = !isFlipped;
+    }
+
+    // 隨機洗牌
+    function shuffleVocab() {
+      currentVocabList.sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      renderCard();
+    }
+
+    // 日文語音發音 (Web Speech API)
+    function speakCurrentWord(event) {
+      if (event) event.stopPropagation(); // 阻止觸發卡片翻牌
+      if (currentVocabList.length === 0) return;
+
+      const current = currentVocabList[currentIndex];
+      const textToSpeak = current.kana || current.word;
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = "ja-JP"; // 設定語言為日文
+      utterance.rate = 0.9;     // 稍微放慢速度適合學習者
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // 標記記憶狀態
+    function markWord(remembered) {
+      if (currentVocabList.length === 0) return;
+
+      const current = currentVocabList[currentIndex];
+      
+      // 記錄到 localStorage
+      localStorage.setItem(`vocab_status_${current.id}`, remembered ? "remembered" : "forgot");
+
+      // 移動到下一個單字
+      if (currentIndex < currentVocabList.length - 1) {
+        currentIndex++;
+      } else {
+        alert("本課單字已瀏覽完畢！");
+        currentIndex = 0;
+      }
+
+      renderCard();
+    }
+
+    // 更新進度顯示
+    function updateProgress() {
+      const total = currentVocabList.length;
+      const currentNum = total > 0 ? currentIndex + 1 : 0;
+      document.getElementById("progressText").textContent = `單字：${currentNum} / ${total}`;
+
+      // 計算已記住數量
+      let rememberedCount = 0;
+      currentVocabList.forEach(item => {
+        if (localStorage.getItem(`vocab_status_${item.id}`) === "remembered") {
+          rememberedCount++;
+        }
+      });
+      document.getElementById("rememberCount").textContent = `已記住：${rememberedCount}`;
+    }
+
+    // 支援鍵盤快捷鍵操作
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        flipCard();
+      } else if (e.code === "ArrowLeft") {
+        markWord(false); // 左方向鍵：還沒記住
+      } else if (e.code === "ArrowRight") {
+        markWord(true);  // 右方向鍵：已經記住
+      }
+    });
+
+    // 初始載入
+    updateLessonOptions();
+  </script>
+</body>
+</html>
