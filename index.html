@@ -138,7 +138,7 @@
       height: 100%;
       position: relative;
       transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transition: transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1);
       border-radius: 16px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
@@ -341,7 +341,7 @@
       <!-- 自動生成 -->
     </select>
 
-    <select id="filterSelect" onchange="renderCard()">
+    <select id="filterSelect" onchange="onFilterChange()">
       <option value="all">全部項目</option>
       <option value="forgot">僅看：還沒記住</option>
       <option value="remembered">僅看：已經記住</option>
@@ -400,7 +400,6 @@
     let rawDataList = [];     
     let currentDataList = []; 
     let currentIndex = 0;
-    let isFlipped = false;
 
     // 切換單字卡與文法卡模式
     function switchMode(mode) {
@@ -450,15 +449,21 @@
         }
 
         currentIndex = 0;
-        renderCard();
+        applyFilterAndRender();
       } catch (error) {
         console.error("載入失敗：", error);
         document.getElementById("frontTitle").textContent = "載入失敗，請檢查網路";
       }
     }
 
-    // 渲染當前卡片與套用篩選
-    function renderCard() {
+    // 當下拉篩選選單改變時
+    function onFilterChange() {
+      currentIndex = 0;
+      applyFilterAndRender();
+    }
+
+    // 套用篩選並渲染
+    function applyFilterAndRender() {
       const filterType = document.getElementById("filterSelect").value;
 
       currentDataList = rawDataList.filter(item => {
@@ -468,6 +473,19 @@
         if (filterType === "forgot") return !isRemembered;
         return true;
       });
+
+      if (currentIndex >= currentDataList.length) {
+        currentIndex = 0;
+      }
+
+      renderCard();
+    }
+
+    // 渲染當前卡片
+    function renderCard() {
+      // 每次渲染強制翻回正面
+      const card = document.getElementById("flashcard");
+      card.classList.remove("flipped");
 
       if (currentDataList.length === 0) {
         document.getElementById("frontTitle").textContent = "無符合條件的內容";
@@ -483,13 +501,7 @@
         return;
       }
 
-      if (currentIndex >= currentDataList.length) currentIndex = 0;
       const current = currentDataList[currentIndex];
-
-      // 卡片翻回正面
-      const card = document.getElementById("flashcard");
-      card.classList.remove("flipped");
-      isFlipped = false;
 
       // 檢查並顯示視覺標記
       const key = `${currentMode}_status_${current.id}`;
@@ -551,7 +563,6 @@
       if (currentDataList.length === 0) return;
       const card = document.getElementById("flashcard");
       card.classList.toggle("flipped");
-      isFlipped = !isFlipped;
     }
 
     // 洗牌功能
@@ -562,7 +573,7 @@
       renderCard();
     }
 
-    // 語音發音 (會自動抓單字或例句朗讀)
+    // 語音發音
     function speakCurrentText(event) {
       if (event) event.stopPropagation();
       if (currentDataList.length === 0) return;
@@ -580,7 +591,7 @@
       window.speechSynthesis.speak(utterance);
     }
 
-    // 標記記憶狀態
+    // 標記記憶狀態 (優化流暢度與重跑機制)
     function markItem(remembered) {
       if (currentDataList.length === 0) return;
 
@@ -590,10 +601,24 @@
         localStorage.setItem(key, remembered ? "remembered" : "forgot");
       }
 
+      const filterType = document.getElementById("filterSelect").value;
+
+      // 如果有開篩選，需要重新計算當前資料列表
+      if (filterType !== "all") {
+        currentDataList = rawDataList.filter(item => {
+          const key = `${currentMode}_status_${item.id}`;
+          const isRemembered = localStorage.getItem(key) === "remembered";
+          if (filterType === "remembered") return isRemembered;
+          if (filterType === "forgot") return !isRemembered;
+          return true;
+        });
+      }
+
+      // 跳下一張或重置
       if (currentIndex < currentDataList.length - 1) {
         currentIndex++;
       } else {
-        alert("目前的項目已瀏覽完畢！");
+        alert("目前的項目已瀏覽完畢！將重新從第一張開始。");
         currentIndex = 0;
       }
 
@@ -609,7 +634,7 @@
           }
         });
         currentIndex = 0;
-        renderCard();
+        applyFilterAndRender();
       }
     }
 
@@ -630,6 +655,9 @@
 
     // 鍵盤快捷鍵綁定
     document.addEventListener("keydown", (e) => {
+      // 避開正在操作下拉選單的情況
+      if (e.target.tagName === "SELECT") return;
+
       if (e.code === "Space") {
         e.preventDefault();
         flipCard();
