@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>大家的日本語 N5 單字卡</title>
+  <title>大家的日本語 N5 學習卡</title>
   <style>
     :root {
       --primary-color: #e74c3c;
@@ -32,13 +32,38 @@
 
     header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     h1 {
       font-size: 1.8rem;
       color: var(--primary-color);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    /* 模式切換按鈕 */
+    .mode-switch {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .mode-btn {
+      padding: 8px 18px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: 2px solid var(--primary-color);
+      background: white;
+      color: var(--primary-color);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: var(--primary-color);
+      color: white;
     }
 
     /* 控制面板 */
@@ -52,7 +77,7 @@
       padding: 15px 20px;
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       width: 100%;
       max-width: 520px;
     }
@@ -96,7 +121,7 @@
     .card-container {
       width: 100%;
       max-width: 420px;
-      height: 280px;
+      height: 300px;
       perspective: 1000px;
       cursor: pointer;
       margin-bottom: 20px;
@@ -147,11 +172,22 @@
     }
 
     /* 正面卡片內容 */
-    .card-front .word {
-      font-size: 2.2rem;
+    .card-front .title {
+      font-size: 1.8rem;
       font-weight: bold;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      color: #2c3e50;
       word-break: break-word;
+    }
+
+    .card-front .formula-box {
+      font-size: 1rem;
+      color: #2980b9;
+      background: #ebf5fb;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-weight: 500;
     }
 
     .card-front .kana-sub {
@@ -178,16 +214,29 @@
     .card-back {
       transform: rotateY(180deg);
       background-color: #fafafa;
+      overflow-y: auto;
     }
 
     .card-back .meaning {
-      font-size: 1.6rem;
+      font-size: 1.3rem;
       font-weight: bold;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    .card-back .explanation-box {
+      font-size: 0.88rem;
+      color: #555;
+      background: #fff8e7;
+      padding: 8px 12px;
+      border-left: 4px solid #f39c12;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      text-align: left;
+      width: 100%;
     }
 
     .card-back .example-box {
-      margin-top: 10px;
       background: #f0f4f8;
       padding: 10px 14px;
       border-radius: 8px;
@@ -202,7 +251,6 @@
       line-height: 1.4;
     }
 
-    /* 例句關鍵字高亮 */
     .card-back .example-jp .highlight {
       color: #e74c3c;
       font-weight: bold;
@@ -268,7 +316,12 @@
 <body>
 
   <header>
-    <h1>大家的日本語 N5 單字卡</h1>
+    <h1>大家的日本語 N5 學習卡</h1>
+    <!-- 模式切換：單字卡 vs 文法句型卡 -->
+    <div class="mode-switch">
+      <button id="modeVocab" class="mode-btn active" onclick="switchMode('vocab')">📝 單字卡</button>
+      <button id="modeGrammar" class="mode-btn" onclick="switchMode('grammar')">📖 文法句型</button>
+    </div>
   </header>
 
   <!-- 控制面板 -->
@@ -278,35 +331,36 @@
       <option value="2">初級二 (13-25課)</option>
     </select>
 
-    <select id="lessonSelect" onchange="loadVocab()">
+    <select id="lessonSelect" onchange="loadData()">
       <!-- 自動生成 -->
     </select>
 
     <select id="filterSelect" onchange="renderCard()">
-      <option value="all">全部單字</option>
+      <option value="all">全部項目</option>
       <option value="forgot">僅看：還沒記住</option>
       <option value="remembered">僅看：已經記住</option>
     </select>
 
-    <button onclick="shuffleVocab()">🔀 隨機洗牌</button>
+    <button onclick="shuffleData()">🔀 隨機洗牌</button>
     <button class="btn-reset" onclick="resetLessonProgress()">🧹 重置本課</button>
   </div>
 
   <!-- 進度與計數器 -->
   <div class="info-bar">
-    <span id="progressText">單字：0 / 0</span>
+    <span id="progressText">項目：0 / 0</span>
     <span id="rememberCount">已記住：0</span>
   </div>
 
-  <!-- 3D 翻牌單字卡 -->
+  <!-- 3D 翻牌卡片 -->
   <div class="card-container" onclick="flipCard()">
     <div class="card" id="flashcard">
       <!-- 正面 -->
       <div class="card-face card-front">
         <div class="status-badge" id="statusBadge">✅ 已記住</div>
-        <button class="audio-btn" onclick="speakCurrentWord(event)" title="聽發音">🔊</button>
+        <button class="audio-btn" onclick="speakCurrentText(event)" title="聽發音">🔊</button>
         
-        <div class="word" id="frontWord">載入中...</div>
+        <div class="title" id="frontTitle">載入中...</div>
+        <div class="formula-box" id="frontFormula" style="display: none;"></div>
         <div class="kana-sub" id="frontKana"></div>
         <div class="romaji" id="frontRomaji"></div>
         <div class="hint">點擊卡片或按 Space 翻面</div>
@@ -314,9 +368,10 @@
 
       <!-- 背面 -->
       <div class="card-face card-back">
-        <button class="audio-btn" onclick="speakCurrentWord(event)" title="聽發音">🔊</button>
+        <button class="audio-btn" onclick="speakCurrentText(event)" title="聽發音">🔊</button>
         
         <div class="meaning" id="backMeaning"></div>
+        <div class="explanation-box" id="backExplanation" style="display: none;"></div>
         
         <div class="example-box">
           <div class="example-jp" id="backExampleJp"></div>
@@ -328,17 +383,29 @@
 
   <!-- 操作按鈕 -->
   <div class="action-buttons">
-    <button class="btn-status btn-forget" onclick="markWord(false)">❌ 還沒記住 (←)</button>
-    <button class="btn-status btn-remember" onclick="markWord(true)">⭕ 已經記住 (→)</button>
+    <button class="btn-status btn-forget" onclick="markItem(false)">❌ 還沒記住 (←)</button>
+    <button class="btn-status btn-remember" onclick="markItem(true)">⭕ 已經記住 (→)</button>
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
 
-    let rawVocabList = [];     // 儲存 API 載入的原始該課單字
-    let currentVocabList = []; // 儲存經篩選模式處理後的單字列表
+    let currentMode = "vocab"; // 'vocab' 或 'grammar'
+    let rawDataList = [];     
+    let currentDataList = []; 
     let currentIndex = 0;
     let isFlipped = false;
+
+    // 切換單字卡與文法卡模式
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+
+      document.getElementById("modeVocab").classList.toggle("active", mode === "vocab");
+      document.getElementById("modeGrammar").classList.toggle("active", mode === "grammar");
+
+      loadData();
+    }
 
     // 初始化課別下拉選單
     function updateLessonOptions() {
@@ -356,31 +423,31 @@
         lessonSelect.appendChild(option);
       }
 
-      loadVocab();
+      loadData();
     }
 
-    // 從 Google Apps Script API 載入當前課數單字
-    async function loadVocab() {
+    // 載入資料 (帶入 currentMode 參數)
+    async function loadData() {
       const selectedLesson = document.getElementById("lessonSelect").value;
-      document.getElementById("frontWord").textContent = "載入中...";
+      document.getElementById("frontTitle").textContent = "載入中...";
 
       try {
-        const response = await fetch(`${API_URL}?lesson=${selectedLesson}`);
+        const response = await fetch(`${API_URL}?lesson=${selectedLesson}&type=${currentMode}`);
         if (!response.ok) throw new Error(`HTTP 狀態碼: ${response.status}`);
 
         const data = await response.json();
 
         if (Array.isArray(data)) {
-          rawVocabList = data.filter(item => item && String(item.lesson) === String(selectedLesson));
+          rawDataList = data.filter(item => item && String(item.lesson) === String(selectedLesson));
         } else {
-          rawVocabList = [];
+          rawDataList = [];
         }
 
         currentIndex = 0;
         renderCard();
       } catch (error) {
         console.error("載入失敗：", error);
-        document.getElementById("frontWord").textContent = "載入失敗，請檢查網路";
+        document.getElementById("frontTitle").textContent = "載入失敗，請檢查網路";
       }
     }
 
@@ -388,19 +455,21 @@
     function renderCard() {
       const filterType = document.getElementById("filterSelect").value;
 
-      // 篩選模式處理
-      currentVocabList = rawVocabList.filter(item => {
-        const isRemembered = localStorage.getItem(`vocab_status_${item.id}`) === "remembered";
+      currentDataList = rawDataList.filter(item => {
+        const key = `${currentMode}_status_${item.id}`;
+        const isRemembered = localStorage.getItem(key) === "remembered";
         if (filterType === "remembered") return isRemembered;
         if (filterType === "forgot") return !isRemembered;
-        return true; // all
+        return true;
       });
 
-      if (currentVocabList.length === 0) {
-        document.getElementById("frontWord").textContent = "無符合條件的單字";
+      if (currentDataList.length === 0) {
+        document.getElementById("frontTitle").textContent = "無符合條件的內容";
+        document.getElementById("frontFormula").style.display = "none";
         document.getElementById("frontKana").textContent = "";
         document.getElementById("frontRomaji").textContent = "";
         document.getElementById("backMeaning").textContent = "";
+        document.getElementById("backExplanation").style.display = "none";
         document.getElementById("backExampleJp").textContent = "";
         document.getElementById("backExampleCn").textContent = "";
         document.getElementById("statusBadge").style.display = "none";
@@ -408,35 +477,62 @@
         return;
       }
 
-      if (currentIndex >= currentVocabList.length) currentIndex = 0;
-      const current = currentVocabList[currentIndex];
+      if (currentIndex >= currentDataList.length) currentIndex = 0;
+      const current = currentDataList[currentIndex];
 
       // 卡片翻回正面
       const card = document.getElementById("flashcard");
       card.classList.remove("flipped");
       isFlipped = false;
 
-      // 檢查並顯示視覺標記 (✅ 已記住)
-      const isRemembered = localStorage.getItem(`vocab_status_${current.id}`) === "remembered";
+      // 檢查並顯示視覺標記
+      const key = `${currentMode}_status_${current.id}`;
+      const isRemembered = localStorage.getItem(key) === "remembered";
       document.getElementById("statusBadge").style.display = isRemembered ? "block" : "none";
 
-      // 填寫正面欄位
-      document.getElementById("frontWord").textContent = current.word || "";
-      document.getElementById("frontKana").textContent = current.kana || "";
-      document.getElementById("frontRomaji").textContent = current.romaji || "";
+      if (currentMode === "vocab") {
+        // 單字卡渲染
+        document.getElementById("frontTitle").textContent = current.word || "";
+        document.getElementById("frontFormula").style.display = "none";
+        document.getElementById("frontKana").textContent = current.kana || "";
+        document.getElementById("frontRomaji").textContent = current.romaji || "";
 
-      // 填寫背面欄位
-      document.getElementById("backMeaning").textContent = current.meaning || "";
+        document.getElementById("backMeaning").textContent = current.meaning || "";
+        document.getElementById("backExplanation").style.display = "none";
 
-      // 背面例句關鍵字紅色高亮處理
-      if (current.example) {
-        let highlightedExample = current.example;
-        if (current.word) {
-          highlightedExample = highlightedExample.split(current.word).join(`<span class="highlight">${current.word}</span>`);
+        if (current.example) {
+          let highlightedExample = current.example;
+          if (current.word) {
+            highlightedExample = highlightedExample.split(current.word).join(`<span class="highlight">${current.word}</span>`);
+          }
+          document.getElementById("backExampleJp").innerHTML = `例：${highlightedExample}`;
+        } else {
+          document.getElementById("backExampleJp").innerHTML = "";
         }
-        document.getElementById("backExampleJp").innerHTML = `例：${highlightedExample}`;
       } else {
-        document.getElementById("backExampleJp").innerHTML = "";
+        // 文法句型卡渲染
+        document.getElementById("frontTitle").textContent = current.title || "";
+        
+        if (current.formula) {
+          document.getElementById("frontFormula").textContent = `接續：${current.formula}`;
+          document.getElementById("frontFormula").style.display = "block";
+        } else {
+          document.getElementById("frontFormula").style.display = "none";
+        }
+
+        document.getElementById("frontKana").textContent = "";
+        document.getElementById("frontRomaji").textContent = "";
+
+        document.getElementById("backMeaning").textContent = current.meaning || "";
+
+        if (current.explanation) {
+          document.getElementById("backExplanation").innerHTML = `💡 <b>說明：</b>${current.explanation}`;
+          document.getElementById("backExplanation").style.display = "block";
+        } else {
+          document.getElementById("backExplanation").style.display = "none";
+        }
+
+        document.getElementById("backExampleJp").innerHTML = current.example ? `例：${current.example}` : "";
       }
 
       document.getElementById("backExampleCn").textContent = current.example_meaning || "";
@@ -446,27 +542,29 @@
 
     // 翻牌切換
     function flipCard() {
-      if (currentVocabList.length === 0) return;
+      if (currentDataList.length === 0) return;
       const card = document.getElementById("flashcard");
       card.classList.toggle("flipped");
       isFlipped = !isFlipped;
     }
 
     // 洗牌功能
-    function shuffleVocab() {
-      if (currentVocabList.length <= 1) return;
-      currentVocabList.sort(() => Math.random() - 0.5);
+    function shuffleData() {
+      if (currentDataList.length <= 1) return;
+      currentDataList.sort(() => Math.random() - 0.5);
       currentIndex = 0;
       renderCard();
     }
 
-    // 語音發音
-    function speakCurrentWord(event) {
+    // 語音發音 (會自動抓單字或例句朗讀)
+    function speakCurrentText(event) {
       if (event) event.stopPropagation();
-      if (currentVocabList.length === 0) return;
+      if (currentDataList.length === 0) return;
 
-      const current = currentVocabList[currentIndex];
-      const textToSpeak = current.kana || current.word;
+      const current = currentDataList[currentIndex];
+      const textToSpeak = currentMode === "vocab" 
+        ? (current.kana || current.word)
+        : (current.example || current.title);
 
       if (!textToSpeak) return;
 
@@ -477,18 +575,19 @@
     }
 
     // 標記記憶狀態
-    function markWord(remembered) {
-      if (currentVocabList.length === 0) return;
+    function markItem(remembered) {
+      if (currentDataList.length === 0) return;
 
-      const current = currentVocabList[currentIndex];
+      const current = currentDataList[currentIndex];
       if (current && current.id) {
-        localStorage.setItem(`vocab_status_${current.id}`, remembered ? "remembered" : "forgot");
+        const key = `${currentMode}_status_${current.id}`;
+        localStorage.setItem(key, remembered ? "remembered" : "forgot");
       }
 
-      if (currentIndex < currentVocabList.length - 1) {
+      if (currentIndex < currentDataList.length - 1) {
         currentIndex++;
       } else {
-        alert("目前的單字已瀏覽完畢！");
+        alert("目前的項目已瀏覽完畢！");
         currentIndex = 0;
       }
 
@@ -497,10 +596,10 @@
 
     // 重置本課紀錄
     function resetLessonProgress() {
-      if (confirm("確定要重置這一課的所有記憶紀錄嗎？")) {
-        rawVocabList.forEach(item => {
+      if (confirm(`確定要重置這一課的所有${currentMode === "vocab" ? "單字" : "文法"}記憶紀錄嗎？`)) {
+        rawDataList.forEach(item => {
           if (item && item.id) {
-            localStorage.removeItem(`vocab_status_${item.id}`);
+            localStorage.removeItem(`${currentMode}_status_${item.id}`);
           }
         });
         currentIndex = 0;
@@ -510,17 +609,17 @@
 
     // 更新進度條與數據
     function updateProgress() {
-      const total = currentVocabList.length;
+      const total = currentDataList.length;
       const currentNum = total > 0 ? currentIndex + 1 : 0;
-      document.getElementById("progressText").textContent = `單字：${currentNum} / ${total}`;
+      document.getElementById("progressText").textContent = `項目：${currentNum} / ${total}`;
 
       let rememberedCount = 0;
-      rawVocabList.forEach(item => {
-        if (item && item.id && localStorage.getItem(`vocab_status_${item.id}`) === "remembered") {
+      rawDataList.forEach(item => {
+        if (item && item.id && localStorage.getItem(`${currentMode}_status_${item.id}`) === "remembered") {
           rememberedCount++;
         }
       });
-      document.getElementById("rememberCount").textContent = `已記住：${rememberedCount} / ${rawVocabList.length}`;
+      document.getElementById("rememberCount").textContent = `已記住：${rememberedCount} / ${rawDataList.length}`;
     }
 
     // 鍵盤快捷鍵綁定
@@ -529,9 +628,9 @@
         e.preventDefault();
         flipCard();
       } else if (e.code === "ArrowLeft") {
-        markWord(false);
+        markItem(false);
       } else if (e.code === "ArrowRight") {
-        markWord(true);
+        markItem(true);
       }
     });
 
