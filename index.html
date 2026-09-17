@@ -316,15 +316,21 @@
     }
 
     // 載入當前選擇課數的單字
-    function loadVocab() {
-      const selectedLesson = parseInt(document.getElementById("lessonSelect").value);
+    async function loadVocab() {
+      const selectedLesson = document.getElementById("lessonSelect").value;
       
-      // 篩選單字（若串接 Google 試算表，可在這裡改為 fetch API）
-      currentVocabList = mockDatabase.filter(item => item.lesson === selectedLesson);
-      currentIndex = 0;
-      
-      renderCard();
-      updateProgress();
+      // 替換成您剛剛複製的 Google Apps Script 網址
+      const API_URL = "https://script.google.com/macros/s/AKfycbzMW4846wXLCHCEcN1LfGv4Dq6hCPfmELT5PxulrJjC6ziI8sFzn4-eUPtc8Dtxh4SypA/exec";
+    
+      try {
+        const response = await fetch(`${API_URL}?lesson=${selectedLesson}`);
+        currentVocabList = await response.json();
+        currentIndex = 0;
+        renderCard();
+        updateProgress();
+      } catch (error) {
+        console.error("抓取資料失敗：", error);
+      }
     }
 
     // 渲染卡片內容
